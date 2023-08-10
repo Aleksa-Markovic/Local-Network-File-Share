@@ -1,6 +1,7 @@
 import customtkinter
 import tkinter
 import requests
+from requests.exceptions import ConnectTimeout
 import wget
 import json
 import os
@@ -19,6 +20,7 @@ class UI:
 
     SCROLLABLE_FRAME = None
     OPTIONS_WINDOW = None
+    REQUEST_TIMEOUT = 1.0
 
     variable_list = []
     checkboxes = []
@@ -28,6 +30,7 @@ class UI:
 
     new_ip_textbox = None
     new_port_textbox = None
+    request_time_limit_textbox = None
 
 
     def __init__(self):
@@ -105,16 +108,21 @@ class UI:
         options_button.place(relx=0.02, rely=0.5, anchor=customtkinter.W)
 
     def request_content(self):
-        r = requests.get(self.FULL_LINK)
-        if r.status_code == 200:
-            return r.text
-        else:
-            raise Exception
+        try:
+            r = requests.get(self.FULL_LINK, timeout=self.REQUEST_TIMEOUT)
+            if r.status_code == 200:
+                return r.text
+            else:
+                return None
+        except ConnectTimeout:
+            return None
 
     def load_content(self):
         self.clear_loaded_content()
         self.FULL_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)
         text = self.request_content()
+        if text == None:
+            return
         soup = BeautifulSoup(text, features='html.parser')
         links_list = soup.find_all('a')
         self.links = []
@@ -179,6 +187,13 @@ class UI:
         options_button_update = customtkinter.CTkButton(self.OPTIONS_WINDOW, width=200, text="Update", command=self.update_source)
         options_button_update.place(relx=0.02, rely=0.8, anchor=customtkinter.W)
 
+        request_time_limit_label = customtkinter.CTkLabel(self.OPTIONS_WINDOW, text="Request Time Limit (Default is 1)")
+        request_time_limit_label.place(relx=0.4, rely=0.4, anchor=customtkinter.W)
+
+        self.request_time_limit_textbox = customtkinter.CTkTextbox(self.OPTIONS_WINDOW, height=20, width=50)
+        self.request_time_limit_textbox.place(relx=0.4, rely=0.55, anchor=customtkinter.W)
+        self.request_time_limit_textbox.bind('<KeyRelease>', lambda event:self.limit_input(self.request_time_limit_textbox, type='RATE'))
+
     def limit_input(self, textbox, type=None):
         if type == "PORT":
             if len(textbox.get('0.0', customtkinter.END)) > 5:
@@ -186,14 +201,24 @@ class UI:
         elif type == "IP":
             if len(textbox.get('0.0', customtkinter.END)) > 16:
                 textbox.delete('end-2c', 'end')
+        elif type == "RATE":
+            if len(textbox.get('0.0', customtkinter.END)) > 4:
+                textbox.delete('end-2c', 'end')
 
     def update_source(self):
         if len(self.new_ip_textbox.get('0.0', customtkinter.END).strip()) == 0:
-            print("here")
+            self.SERVER_IP = self.SERVER_IP
         else:
             self.SERVER_IP = self.new_ip_textbox.get('0.0', customtkinter.END).strip()
-            print(self.SERVER_IP)
-            
+        if len(self.new_port_textbox.get('0.0', customtkinter.END).strip()) == 0:
+            self.SERVER_PORT = self.SERVER_PORT
+        else:
+            self.SERVER_PORT = self.new_port_textbox.get('0.0', customtkinter.END).strip()
+        if len(self.request_time_limit_textbox.get('0.0', customtkinter.END).strip()) == 0:
+            self.REQUEST_TIMEOUT = self.REQUEST_TIMEOUT
+        else:
+            self.REQUEST_TIMEOUT = float(self.request_time_limit_textbox.get('0.0', customtkinter.END).strip())
+
     def safe_close(self):
         if self.OPTIONS_WINDOW != None:
             self.OPTIONS_WINDOW.destroy()
