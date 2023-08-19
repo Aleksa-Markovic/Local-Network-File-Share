@@ -19,8 +19,12 @@ class UI:
     SYSTEM = None
 
     SCROLLABLE_FRAME = None
+    IP_LABEL = None
+    PORT_LABEL = None
+    SELECT_ALL_BUTTON = None
     OPTIONS_WINDOW = None
     REQUEST_TIMEOUT = 1.0
+    SELECTED_ALL = False
 
     variable_list = []
     checkboxes = []
@@ -86,11 +90,11 @@ class UI:
 
     def create_widgets(self):
 
-        ip_label = customtkinter.CTkLabel(self.ROOT, text=f"Current Session IP: {self.SERVER_IP}")
-        ip_label.place(relx=0.02, rely=0.05, anchor=customtkinter.W)
+        self.IP_LABEL = customtkinter.CTkLabel(self.ROOT, text=f"Current Session IP: {self.SERVER_IP}")
+        self.IP_LABEL.place(relx=0.02, rely=0.05, anchor=customtkinter.W)
 
-        port_label = customtkinter.CTkLabel(self.ROOT, text=f"Current Session PORT: {self.SERVER_PORT}")
-        port_label.place(relx=0.02, rely=0.1, anchor=customtkinter.W)
+        self.PORT_LABEL = customtkinter.CTkLabel(self.ROOT, text=f"Current Session PORT: {self.SERVER_PORT}")
+        self.PORT_LABEL.place(relx=0.02, rely=0.1, anchor=customtkinter.W)
 
         load_content_button = customtkinter.CTkButton(self.ROOT, width=200, text='Load Content', command=self.load_content)
         load_content_button.place(relx=0.02, rely=0.2, anchor=customtkinter.W)
@@ -104,8 +108,11 @@ class UI:
         location_button = customtkinter.CTkButton(self.ROOT, width=200, text='Set Download Location', command=self.set_download_location)
         location_button.place(relx=0.02, rely=0.4, anchor=customtkinter.W)
 
+        self.SELECT_ALL_BUTTON = customtkinter.CTkButton(self.ROOT, width=200, text='Select All', command=self.select_all)
+        self.SELECT_ALL_BUTTON.place(relx=0.02, rely=0.5, anchor=customtkinter.W)
+
         options_button = customtkinter.CTkButton(self.ROOT, width=200, text='Options', command=self.options)
-        options_button.place(relx=0.02, rely=0.5, anchor=customtkinter.W)
+        options_button.place(relx=0.02, rely=0.6, anchor=customtkinter.W)
 
     def request_content(self):
         try:
@@ -164,6 +171,19 @@ class UI:
             item_link = self.FULL_LINK+'/'+checked_item
             wget.download(item_link, self.download_location)
 
+    def select_all(self):
+        if len(self.checkboxes) > 0:
+            if self.SELECTED_ALL == False:
+                for checkbox in self.checkboxes:
+                    checkbox.select()
+                self.SELECT_ALL_BUTTON.configure(text='Deselect All')
+                self.SELECTED_ALL = True
+            else:
+                for checkbox in self.checkboxes:
+                    checkbox.deselect()
+                self.SELECT_ALL_BUTTON.configure(text='Select All')
+                self.SELECTED_ALL = False
+
     def options(self):
         self.OPTIONS_WINDOW = customtkinter.CTkToplevel(self.ROOT)
         self.OPTIONS_WINDOW.title("Options")
@@ -210,14 +230,20 @@ class UI:
             self.SERVER_IP = self.SERVER_IP
         else:
             self.SERVER_IP = self.new_ip_textbox.get('0.0', customtkinter.END).strip()
+            self.update_labels()
         if len(self.new_port_textbox.get('0.0', customtkinter.END).strip()) == 0:
             self.SERVER_PORT = self.SERVER_PORT
         else:
             self.SERVER_PORT = self.new_port_textbox.get('0.0', customtkinter.END).strip()
+            self.update_labels()
         if len(self.request_time_limit_textbox.get('0.0', customtkinter.END).strip()) == 0:
             self.REQUEST_TIMEOUT = self.REQUEST_TIMEOUT
         else:
             self.REQUEST_TIMEOUT = float(self.request_time_limit_textbox.get('0.0', customtkinter.END).strip())
+
+    def update_labels(self):
+        self.IP_LABEL.configure(text=f"Current Session IP: {self.SERVER_IP}")
+        self.PORT_LABEL.configure(text=f"Current Session PORT: {self.SERVER_PORT}")
 
     def safe_close(self):
         if self.OPTIONS_WINDOW != None:
