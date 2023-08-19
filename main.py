@@ -22,9 +22,12 @@ class UI:
     IP_LABEL = None
     PORT_LABEL = None
     SELECT_ALL_BUTTON = None
+    BACK_BUTTON = None
     OPTIONS_WINDOW = None
     REQUEST_TIMEOUT = 1.0
     SELECTED_ALL = False
+    NEW_FOLDER_LOADED = False
+    DEFAULT_LINK = None
 
     variable_list = []
     checkboxes = []
@@ -114,6 +117,8 @@ class UI:
         options_button = customtkinter.CTkButton(self.ROOT, width=200, text='Options', command=self.options)
         options_button.place(relx=0.02, rely=0.6, anchor=customtkinter.W)
 
+        self.BACK_BUTTON = customtkinter.CTkButton(self.ROOT, width=200, text='Back', command=self.load_back)
+
     def request_content(self):
         try:
             r = requests.get(self.FULL_LINK, timeout=self.REQUEST_TIMEOUT)
@@ -124,9 +129,14 @@ class UI:
         except ConnectTimeout:
             return None
 
-    def load_content(self):
+    def load_content(self, suffix="", new_full_link=None):
         self.clear_loaded_content()
-        self.FULL_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)
+        if new_full_link == None:
+            if self.DEFAULT_LINK == None:
+                self.DEFAULT_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)+suffix
+            self.FULL_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)+suffix
+        else:
+            self.FULL_LINK = new_full_link
         text = self.request_content()
         if text == None:
             return
@@ -140,7 +150,7 @@ class UI:
     def display_links(self):
         for link in self.links:
             check_var = tkinter.IntVar()
-            checkbox = customtkinter.CTkCheckBox(self.SCROLLABLE_FRAME, text=link, variable=check_var, onvalue=1, offvalue=0, command=self.update_checked)
+            checkbox = customtkinter.CTkCheckBox(self.SCROLLABLE_FRAME, text=link, variable=check_var, onvalue=1, offvalue=0, command=self.folder_or_file)
             checkbox.pack(padx=5, pady=5)
             self.variable_list.append(check_var)
             self.checkboxes.append(checkbox)
@@ -153,12 +163,45 @@ class UI:
         self.variable_list.clear()
         self.checked_boxes.clear()
 
+    def reload_new_link(self, link):
+        self.load_content(suffix='/'+link)
+        self.NEW_FOLDER_LOADED = True
+        self.back_button_show()
+
+    def back_button_show(self):
+        if self.NEW_FOLDER_LOADED == True:
+            self.BACK_BUTTON.place(relx=0.5, rely=0.75, anchor=customtkinter.W)
+
+    def folder_or_file(self):
+        for var in self.variable_list:
+            if var.get():
+                index = self.variable_list.index(var)
+                if self.links[index].endswith('/'):
+                    self.reload_new_link(self.links[index])
+                    return
+        self.update_checked()
+
+    def load_back(self):
+        if self.NEW_FOLDER_LOADED == False:
+            return
+        else:
+            if self.FULL_LINK == self.DEFAULT_LINK:
+                self.NEW_FOLDER_LOADED = False
+                return
+            if self.FULL_LINK.endswith('/'):
+                self.FULL_LINK = self.FULL_LINK.rsplit('/', 2)[0]
+            else:
+                self.FULL_LINK = self.FULL_LINK.rsplit('/', 1)[0]
+                if self.FULL_LINK == self.DEFAULT_LINK:
+                    self.NEW_FOLDER_LOADED = False
+            self.load_content(suffix='',new_full_link=self.FULL_LINK)
+
     def update_checked(self):
         self.checked_boxes = []
         for var in self.variable_list:
             if var.get():
                 index = self.variable_list.index(var)
-                if self.links[index] not in self.checked_boxes:
+                if self.links[index] not in self.checked_boxes and not self.links[index].endswith('/'):
                     self.checked_boxes.append(self.links[index])
 
     def set_download_location(self):
@@ -168,6 +211,8 @@ class UI:
 
     def download(self):
         for checked_item in self.checked_boxes:
+            if checked_item.endswith('/'):
+                continue
             item_link = self.FULL_LINK+'/'+checked_item
             wget.download(item_link, self.download_location)
 
