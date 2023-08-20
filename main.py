@@ -225,11 +225,13 @@ class UI:
                     checkbox.select()
                 self.SELECT_ALL_BUTTON.configure(text='Deselect All')
                 self.SELECTED_ALL = True
+                self.update_checked()
             else:
                 for checkbox in self.checkboxes:
                     checkbox.deselect()
                 self.SELECT_ALL_BUTTON.configure(text='Select All')
                 self.SELECTED_ALL = False
+                self.update_checked()
 
     def options(self):
         self.OPTIONS_WINDOW = customtkinter.CTkToplevel(self.ROOT)
