@@ -63,11 +63,11 @@ class UI:
             return f"Local Network File Sharing Class:\n\tIP:{self.SERVER_IP}\n\tPORT:{self.SERVER_PORT}\n\tSYSTEM:{self.SYSTEM}"
         except:
             raise SystemError
-        
+
     def write_default_configuration(self):
         with open('config', 'a+') as f:
             data = {
-                "SERVER_IP": "192.168.0.26",
+                "SERVER_IP": "localhost",
                 "SERVER_PORT": 8080
             }
             json.dump(data, f)
@@ -133,10 +133,14 @@ class UI:
         self.clear_loaded_content()
         if new_full_link == None:
             if self.DEFAULT_LINK == None:
-                self.DEFAULT_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)+suffix
+                self.DEFAULT_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)
             self.FULL_LINK = "http://"+str(self.SERVER_IP)+":"+str(self.SERVER_PORT)+suffix
         else:
-            self.FULL_LINK = new_full_link
+            if new_full_link[-1] == '/':
+                new_full_link = new_full_link[:-1]
+            self.FULL_LINK = new_full_link+suffix
+            if self.FULL_LINK[-1] != '/':
+                self.FULL_LINK = self.FULL_LINK+'/'
         text = self.request_content()
         if text == None:
             return
@@ -164,7 +168,7 @@ class UI:
         self.checked_boxes.clear()
 
     def reload_new_link(self, link):
-        self.load_content(suffix='/'+link)
+        self.load_content(suffix='/'+link, new_full_link=self.FULL_LINK)
         self.NEW_FOLDER_LOADED = True
         self.back_button_show()
 
@@ -189,12 +193,10 @@ class UI:
                 self.NEW_FOLDER_LOADED = False
                 return
             if self.FULL_LINK.endswith('/'):
-                self.FULL_LINK = self.FULL_LINK.rsplit('/', 2)[0]
-            else:
-                self.FULL_LINK = self.FULL_LINK.rsplit('/', 1)[0]
+                self.FULL_LINK = self.FULL_LINK[:-1].rsplit('/', 1)[0]
                 if self.FULL_LINK == self.DEFAULT_LINK:
                     self.NEW_FOLDER_LOADED = False
-            self.load_content(suffix='',new_full_link=self.FULL_LINK)
+                self.load_content(suffix='',new_full_link=self.FULL_LINK)
 
     def update_checked(self):
         self.checked_boxes = []
