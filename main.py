@@ -39,16 +39,17 @@ class UI:
     new_port_textbox = None
     request_time_limit_textbox = None
 
-
     def __init__(self):
         super().__init__()
 
         self.ROOT = customtkinter.CTk()
         self.ROOT.title("Local Network File Sharing Client")
-        self.ROOT.geometry("1000x600")
+        self.ROOT.geometry("1000x450")
         self.ROOT.resizable(False, False)
         self.ROOT.protocol("WM_DELETE_WINDOW", self.safe_close)
-        
+
+        self.ROOT.after(201, lambda :self.ROOT.iconbitmap('Logo.ico'))
+
         self.system_info()
 
         if os.path.exists('config'):
@@ -222,7 +223,8 @@ class UI:
         if len(self.checkboxes) > 0:
             if self.SELECTED_ALL == False:
                 for checkbox in self.checkboxes:
-                    checkbox.select()
+                    if not checkbox.cget('text').endswith('/'):
+                        checkbox.select()
                 self.SELECT_ALL_BUTTON.configure(text='Deselect All')
                 self.SELECTED_ALL = True
                 self.update_checked()
