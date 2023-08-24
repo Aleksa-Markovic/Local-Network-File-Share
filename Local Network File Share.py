@@ -1,3 +1,7 @@
+'''
+    A simple UI application for transfering files inside a localized network. Uses a simple pyhton http server, or any other http server
+    to download any files from it. Works on Android phones too, even though the UI is a bit less optimized for it.
+'''
 import customtkinter
 import tkinter
 import requests
@@ -63,6 +67,7 @@ class UI:
         except:
             raise SystemError
 
+    # Writes default config file if it isn't present
     def write_default_configuration(self):
         with open('config', 'a+') as f:
             data = {
@@ -72,6 +77,7 @@ class UI:
             json.dump(data, f)
         return
 
+    # Loads from the config file
     def load_configuration(self):
         with open('config', 'r') as f:
             data = json.load(f)
@@ -79,6 +85,7 @@ class UI:
             self.SERVER_PORT = data['SERVER_PORT']
         return
 
+    # Assigns System info
     def system_info(self):
         if sys.platform.startswith('linux'):
             self.SYSTEM = 'Lin'
@@ -93,6 +100,7 @@ class UI:
             self.SYSTEM = None
             raise SystemExit
 
+    # Creates main window widgets
     def create_widgets(self):
 
         self.IP_LABEL = customtkinter.CTkLabel(self.ROOT, text=f"Current Session IP: {self.SERVER_IP}")
@@ -121,6 +129,7 @@ class UI:
 
         self.BACK_BUTTON = customtkinter.CTkButton(self.ROOT, width=200, text='Back', command=self.load_back)
 
+    # Sends the request to the server, and retrieves its contents
     def request_content(self):
         try:
             r = requests.get(self.FULL_LINK, timeout=self.REQUEST_TIMEOUT)
@@ -131,6 +140,7 @@ class UI:
         except ConnectTimeout:
             return None
 
+    # Loads, sorts, and figures out the data received from the server
     def load_content(self, suffix="", new_full_link=None):
         self.clear_loaded_content()
         if new_full_link == None:
@@ -153,6 +163,7 @@ class UI:
             self.links.append(link.text)
         self.display_links()
 
+    # Displays links in the Scrollable frame after its loaded
     def display_links(self):
         self.SCROLLABLE_FRAME = None
         self.SCROLLABLE_FRAME = customtkinter.CTkScrollableFrame(self.ROOT, width=450, height=420)
@@ -164,6 +175,7 @@ class UI:
             self.checkboxes.append(checkbox)
         self.SCROLLABLE_FRAME.place(relx=0.5, rely=0.01, anchor=customtkinter.NW)
 
+    # Clears loaded content, this is neccessary for reloading
     def clear_loaded_content(self):
         for checkbox,var in zip(self.checkboxes, self.variable_list):
             checkbox.destroy()
@@ -172,6 +184,7 @@ class UI:
         self.variable_list.clear()
         self.checked_boxes.clear()
 
+    # Changes the source link, and loads new data from it
     def reload_new_link(self, link):
         self.links.clear()
         self.clear_loaded_content()
@@ -180,10 +193,12 @@ class UI:
         self.NEW_FOLDER_LOADED = True
         self.back_button_show()
 
+    # Displays the back button, after you move to a folder down the tree
     def back_button_show(self):
         if self.NEW_FOLDER_LOADED == True:
             self.BACK_BUTTON.place(relx=0.02, rely=0.8, anchor=customtkinter.W)
 
+    # Figures out if you selected a file or a folder, and does the appropriate action
     def folder_or_file(self):
         for var in self.variable_list:
             if var.get():
@@ -196,6 +211,7 @@ class UI:
                     return
         self.update_checked()
 
+    # Goes back after you click the back button
     def load_back(self):
         if self.NEW_FOLDER_LOADED == False:
             return
@@ -209,6 +225,7 @@ class UI:
                     self.NEW_FOLDER_LOADED = False
                 self.load_content(suffix='',new_full_link=self.FULL_LINK)
 
+    # This just keeps track of the clicked checkboxes and updates the list of them accordingly
     def update_checked(self):
         self.checked_boxes = []
         for var in self.variable_list:
@@ -217,11 +234,13 @@ class UI:
                 if self.links[index] not in self.checked_boxes and not self.links[index].endswith('/'):
                     self.checked_boxes.append(self.links[index])
 
+    # Used for setting the download location
     def set_download_location(self):
         new_location = customtkinter.filedialog.askdirectory(mustexist=True)
         if new_location != None and new_location != ():
             self.download_location = new_location
 
+    # Downloads the selected files after you press the Download button
     def download(self):
         for checked_item in self.checked_boxes:
             if checked_item.endswith('/'):
@@ -229,11 +248,12 @@ class UI:
             item_link = self.FULL_LINK+'/'+checked_item
             wget.download(item_link, self.download_location)
 
+    # Selects all * files *. This only selects downloadable content, and will skip any and all folders
     def select_all(self):
         if len(self.checkboxes) > 0:
             if self.SELECTED_ALL == False:
                 for checkbox in self.checkboxes:
-                    if not checkbox.cget('text').endswith('/'):
+                    if not checkbox.cget('text').endswith('/') and not checkbox.cget('text').endswith('@'):
                         checkbox.select()
                 self.SELECT_ALL_BUTTON.configure(text='Deselect All')
                 self.SELECTED_ALL = True
@@ -245,6 +265,7 @@ class UI:
                 self.SELECTED_ALL = False
                 self.update_checked()
 
+    # Initiator function for the Options window
     def options(self):
         self.OPTIONS_WINDOW = customtkinter.CTkToplevel(self.ROOT)
         self.OPTIONS_WINDOW.title("Options")
@@ -275,6 +296,7 @@ class UI:
         self.request_time_limit_textbox.place(relx=0.4, rely=0.55, anchor=customtkinter.W)
         self.request_time_limit_textbox.bind('<KeyRelease>', lambda event:self.limit_input(self.request_time_limit_textbox, type='RATE'))
 
+    # Limits the allowed characters that can be entered in the textboxes in options window
     def limit_input(self, textbox, type=None):
         if type == "PORT":
             if len(textbox.get('0.0', customtkinter.END)) > 5:
@@ -286,6 +308,7 @@ class UI:
             if len(textbox.get('0.0', customtkinter.END)) > 4:
                 textbox.delete('end-2c', 'end')
 
+    # Used to apply changes from the options window
     def update_source(self):
         if len(self.new_ip_textbox.get('0.0', customtkinter.END).strip()) == 0:
             self.SERVER_IP = self.SERVER_IP
@@ -302,10 +325,12 @@ class UI:
         else:
             self.REQUEST_TIMEOUT = float(self.request_time_limit_textbox.get('0.0', customtkinter.END).strip())
 
+    # Updates labels in the original window after changes happen in the options window
     def update_labels(self):
         self.IP_LABEL.configure(text=f"Current Session IP: {self.SERVER_IP}")
         self.PORT_LABEL.configure(text=f"Current Session PORT: {self.SERVER_PORT}")
 
+    # Maybe not a neccessary function but I found it makes closing the app much safer.
     def safe_close(self):
         if self.OPTIONS_WINDOW != None:
             self.OPTIONS_WINDOW.destroy()
