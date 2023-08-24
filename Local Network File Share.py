@@ -48,8 +48,6 @@ class UI:
         self.ROOT.resizable(False, False)
         self.ROOT.protocol("WM_DELETE_WINDOW", self.safe_close)
 
-        self.ROOT.after(201, lambda :self.ROOT.iconbitmap('Logo.ico'))
-
         self.system_info()
 
         if os.path.exists('config'):
@@ -86,6 +84,7 @@ class UI:
             self.SYSTEM = 'Lin'
         elif sys.platform.startswith('win32'):
             self.SYSTEM = 'Win'
+            self.ROOT.after(501, lambda :self.ROOT.iconbitmap('Logo.ico'))
         elif sys.platform.startswith('darwin'):
             self.SYSTEM = 'mOS'
         elif hasattr(sys, 'getandroidapilevel'):
@@ -153,9 +152,10 @@ class UI:
         for link in links_list:
             self.links.append(link.text)
         self.display_links()
-        # self.SCROLLABLE_FRAME.place(relx=0.5, rely=0.01, anchor=customtkinter.NW)
 
     def display_links(self):
+        self.SCROLLABLE_FRAME = None
+        self.SCROLLABLE_FRAME = customtkinter.CTkScrollableFrame(self.ROOT, width=450, height=420)
         for link in self.links:
             check_var = tkinter.IntVar()
             checkbox = customtkinter.CTkCheckBox(self.SCROLLABLE_FRAME, text=link, variable=check_var, onvalue=1, offvalue=0, command=self.folder_or_file)
@@ -173,10 +173,12 @@ class UI:
         self.checked_boxes.clear()
 
     def reload_new_link(self, link):
+        self.links.clear()
+        self.clear_loaded_content()
+        self.SCROLLABLE_FRAME.place_forget()
         self.load_content(suffix='/'+link, new_full_link=self.FULL_LINK)
         self.NEW_FOLDER_LOADED = True
         self.back_button_show()
-        self.SCROLLABLE_FRAME._scrollbar.set()
 
     def back_button_show(self):
         if self.NEW_FOLDER_LOADED == True:
@@ -188,6 +190,9 @@ class UI:
                 index = self.variable_list.index(var)
                 if self.links[index].endswith('/'):
                     self.reload_new_link(self.links[index])
+                    return
+                if self.links[index].endswith('@'):
+                    self.reload_new_link(self.links[index].replace('@', ''))
                     return
         self.update_checked()
 
