@@ -165,15 +165,13 @@ class UI:
 
     # Displays links in the Scrollable frame after its loaded
     def display_links(self):
-        self.SCROLLABLE_FRAME = None
-        self.SCROLLABLE_FRAME = customtkinter.CTkScrollableFrame(self.ROOT, width=450, height=420)
         for link in self.links:
             check_var = tkinter.IntVar()
             checkbox = customtkinter.CTkCheckBox(self.SCROLLABLE_FRAME, text=link, variable=check_var, onvalue=1, offvalue=0, command=self.folder_or_file)
             checkbox.pack(padx=5, pady=5)
             self.variable_list.append(check_var)
             self.checkboxes.append(checkbox)
-        self.SCROLLABLE_FRAME.place(relx=0.5, rely=0.01, anchor=customtkinter.NW)
+        self.SCROLLABLE_FRAME._parent_canvas.yview_moveto(0)
 
     # Clears loaded content, this is neccessary for reloading
     def clear_loaded_content(self):
@@ -188,7 +186,6 @@ class UI:
     def reload_new_link(self, link):
         self.links.clear()
         self.clear_loaded_content()
-        self.SCROLLABLE_FRAME.place_forget()
         self.load_content(suffix='/'+link, new_full_link=self.FULL_LINK)
         self.NEW_FOLDER_LOADED = True
         self.back_button_show()
